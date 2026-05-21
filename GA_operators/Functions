@@ -68,4 +68,39 @@ def polynomial_mutation(child, mutation_rate, lower_bound, upper_bound, eta=20):
             child[i] = max(lower_bound, min(upper_bound, child[i]))
     return child
 
- 
+
+## Selection, vou ver ainda os fitness dos individuos para ver se não implemento o rank selection.
+def tournament_selection(pool_size: int):
+    '''
+    Performs Tournament Selection.
+    This selection works exactly as the name says. A k number of randomly selected individuals from the population
+    are selected and pitted against each other, where only the best one “survives”.
+
+    Parameters
+    ----------
+    pool_size (): Number of individuals randomly selected from the population to participate in each tournament.
+
+    Returns
+    -------
+    inner_ts (function): Callable funtion to perform Tournament Selection.
+    '''
+
+
+    def inner_ts(population, fitnesses):
+        # Select random indexes from the population
+        pool_indexes = random.sample(range(len(population)),
+                                   pool_size)
+        # Get fitness values corresponding to the selected pool indexes
+        pool_fit = [fitnesses[i] for i in pool_indexes]
+
+        # Find the index of the candidate solution with the highest fitness in the pool
+        index = pool_indexes[np.argmax(pool_fit)]
+       
+        #Return the selected candidate solution
+        return population[index]
+
+    return inner_ts
+
+
+
+
