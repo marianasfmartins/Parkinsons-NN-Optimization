@@ -27,8 +27,7 @@ def initialize_population(num_wolves=30, n_weights=10, method='he_uniform'):
         elif method == 'random':
             weights = generate_random_solution(n_weights)  # comportamento atual
         
-        learning_rate = [random.uniform(0.0001, 0.1)]
-        wolf = np.array(weights + learning_rate)
+        wolf = np.array(weights)
         population.append(wolf)
     
     return population, num_wolves, n_weights
@@ -90,9 +89,9 @@ def grey_wolf_optimizer(population, num_wolves, n_weights, max_iter=50, fitness_
         
         for i in range(num_wolves):
 
-            new_wolf = np.zeros_like(population[i]) # store learning rate and weights here to not mess with the original population during updates
+            new_wolf = np.zeros_like(population[i]) # store and weights here to not mess with the original population during updates
             
-            # update weights and learning rate based on alpha beta and delta 
+            # update weights based on alpha beta and delta 
             for j in range(n_weights + 1):
                 # Update based on alpha
                 # r1: when and where to update, r2: how much to update 
