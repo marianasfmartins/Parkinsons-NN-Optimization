@@ -14,6 +14,8 @@ def data_partition(data,target_name):
                                                       )
 
     return X_train, X_val, X_test, Y_train, Y_val, Y_test
+#Data Partitioning
+X_train, X_val, X_test, Y_train, Y_val, Y_test=data_partition(data,'status')
 
 #training the data and getting the predictions
 def get_predictions(solution,X_train,Y_train, X_val, Y_val):

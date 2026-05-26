@@ -3,9 +3,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-from GA_operators.InitializationMethos import HeNormalInitializationMethod
-from GA_operators.InitializationMethos import HeUniformInitializationMethod
-import torch.nn as nn
+# TODO: Corrigir InitializationMethos para retornar arrays NumPy em vez de PyTorch Layers
+# from GA_operators.InitializationMethos import HeNormalInitializationMethod
+# from GA_operators.InitializationMethos import HeUniformInitializationMethod
+# import torch.nn as nn
 
 
 
@@ -13,19 +14,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import generate_random_solution, fitness_function
 
 
-def initialize_population(num_wolves=30, n_weights=10, method='he_uniform'):
+def initialize_population(num_wolves=30, n_weights=10, method='random'): # we generate 30 possible vectors
     population = []
     
     for _ in range(num_wolves):
         
-        if method == 'he_uniform':
-            weights = HeUniformInitializationMethod(n_weights)      # ← aqui, em vez de generate_random_solution
+        # TODO: Descomentar quando InitializationMethos retornar arrays NumPy
+        # if method == 'he_uniform':
+        #     weights = HeUniformInitializationMethod(n_weights)
+        # elif method == 'he_normal':
+        #     weights = HeNormalInitializationMethod(n_weights)
+        # elif method == 'random':
+        #     weights = generate_random_solution(n_weights)
         
-        elif method == 'he_normal':
-            weights = HeNormalInitializationMethod(n_weights)        # ← aqui, em vez de generate_random_solution
-        
-        elif method == 'random':
-            weights = generate_random_solution(n_weights)  # comportamento atual
+        weights = generate_random_solution(n_weights)  # por agora usa sempre random
         
         wolf = np.array(weights)
         population.append(wolf)
@@ -42,110 +44,117 @@ def grey_wolf_optimizer(population, num_wolves, n_weights, max_iter=50, fitness_
         num_wolves: Number of wolves
         n_weights: Number of weights per wolf
         max_iter: Number of iterations
-        fitness_func: Fitness function
+        fitness_func: Fitness function (receives a wolf/solution, returns a scalar)
         visualize: Save plots to PNG
     
     Returns:
         best_wolf, fitness_history
     """
     
-    #if fitness_func is None:
-        #fitness_func = fitness_function
+    # Initialize leaders and their scores
+    alpha_pos = None
+    alpha_score = float('inf')
     
-    # Find initial alpha, beta, delta wolves
-    best_fitness = float('inf')
-    alpha = None
-    beta = None
-    delta = None
+    beta_pos = None
+    beta_score = float('inf')
     
-    #Let's evaluate each wolf in our population and determine the best three based on their fitness
+    delta_pos = None
+    delta_score = float('inf')
+    
+    # Evaluate initial population and find alpha, beta, delta
+    #alpha best, beta second best, delta third best 
     for wolf in population:
-        fitness = fitness_func(wolf, wolf)
+        fitness = fitness_func(wolf)
 
-        #alpha best, beta secound best, delta third best 
-        if fitness < best_fitness:
-            delta = beta
-            beta = alpha
-            alpha = wolf.copy() #new best solution found, update the rest 
-            best_fitness = fitness
-
-        # only for the begining when we dont have solution for beta and delta so we just update
-        elif beta is None or fitness < fitness_func(beta, beta):
-            delta = beta
-            beta = wolf.copy()
-        elif delta is None or fitness < fitness_func(delta, delta):
-            delta = wolf.copy()
+        if fitness < alpha_score:
+            # Current alpha becomes beta, beta becomes delta
+            delta_score = beta_score
+            delta_pos = beta_pos
+            beta_score = alpha_score
+            beta_pos = alpha_pos
+            alpha_pos = wolf.copy() #new best solution found, update the rest 
+            alpha_score = fitness
+        elif fitness < beta_score:
+            delta_score = beta_score
+            delta_pos = beta_pos
+            beta_pos = wolf.copy()
+            beta_score = fitness
+        elif fitness < delta_score:
+            delta_pos = wolf.copy()
+            delta_score = fitness
     
-    fitness_history = [best_fitness]
+    fitness_history = [alpha_score]
     weight_updates = []
     
     # Main loop
     for iteration in range(max_iter):
         # Linearly decrease from 2 to 0 will control exploration and exploitation 
-        # Wolf will become clorer to the best solution (triangle)
-        a = 2 - iteration * (2 / max_iter)  
+        # Wolf will become closer to the best solution (triangle)
+        a = 2 - iteration * (2 / max_iter) #learning rate??
         new_population = []
         iteration_updates = []
         
         for i in range(num_wolves):
-
-            new_wolf = np.zeros_like(population[i]) # store and weights here to not mess with the original population during updates
+            # Vectorized updates for huge performance boost instead of looping over each weight
             
-            # update weights based on alpha beta and delta 
-            for j in range(n_weights + 1):
-                # Update based on alpha
-                # r1: when and where to update, r2: how much to update 
-                r1, r2 = random.random(), random.random()
-                A1 = 2 * a * r1 - a # direction and magnitude of direction towards alpha 
-                C1 = 2 * r2 # ensures explration by adding randomness to the influeactual location of alpha
-                D_alpha = abs(C1 * alpha[j] - population[i][j]) # distance between current wolf and alpha, influenced by C1
-                X1 = alpha[j] - A1 * D_alpha #actualized position based on alpha influence 
-                
-                # Update based on beta
-                r1, r2 = random.random(), random.random()
-                A2 = 2 * a * r1 - a
-                C2 = 2 * r2
-                D_beta = abs(C2 * beta[j] - population[i][j])
-                X2 = beta[j] - A2 * D_beta
-                
-                # Update based on delta
-                r1, r2 = random.random(), random.random()
-                A3 = 2 * a * r1 - a
-                C3 = 2 * r2
-                D_delta = abs(C3 * delta[j] - population[i][j])
-                X3 = delta[j] - A3 * D_delta
-                
-                # Average the three influences
-                new_wolf[j] = (X1 + X2 + X3) / 3 #find the center of the triangle
-                iteration_updates.append(abs(new_wolf[j] - population[i][j]))
+            # Update based on alpha
+            # r1: when and where to update, r2: how much to update 
+            r1, r2 = np.random.random(n_weights), np.random.random(n_weights)
+            A1 = 2 * a * r1 - a  # direction and magnitude of direction towards alpha
+            C1 = 2 * r2  # ensures exploration by adding randomness
+            D_alpha = np.abs(C1 * alpha_pos - population[i])  # distance between current wolf and alpha
+            X1 = alpha_pos - A1 * D_alpha  # actualized position based on alpha influence
             
+            # Update based on beta
+            r1, r2 = np.random.random(n_weights), np.random.random(n_weights)
+            A2 = 2 * a * r1 - a
+            C2 = 2 * r2
+            D_beta = np.abs(C2 * beta_pos - population[i])
+            X2 = beta_pos - A2 * D_beta
+            
+            # Update based on delta
+            r1, r2 = np.random.random(n_weights), np.random.random(n_weights)
+            A3 = 2 * a * r1 - a
+            C3 = 2 * r2
+            D_delta = np.abs(C3 * delta_pos - population[i])
+            X3 = delta_pos - A3 * D_delta
+            
+            # Average the three influences
+            new_wolf = (X1 + X2 + X3) / 3  # find the center of the triangle
+            
+            iteration_updates.append(np.mean(np.abs(new_wolf - population[i])))
             new_population.append(new_wolf)
         
-        population = new_population #everytime a new population is generated we update it 
+        population = new_population  # everytime a new population is generated we update it 
         
         # Re-evaluate and update leaders
         for wolf in population:
-            fitness = fitness_func(wolf, wolf)
-            if fitness < best_fitness:
-                delta = beta
-                beta = alpha
-                alpha = wolf.copy()
-                best_fitness = fitness
-            elif beta is None or fitness < fitness_func(beta, beta):
-                delta = beta
-                beta = wolf.copy()
-            elif delta is None or fitness < fitness_func(delta, delta):
-                delta = wolf.copy()
+            fitness = fitness_func(wolf)
+            if fitness < alpha_score:
+                delta_score = beta_score
+                delta_pos = beta_pos
+                beta_score = alpha_score
+                beta_pos = alpha_pos
+                alpha_pos = wolf.copy()
+                alpha_score = fitness
+            elif fitness < beta_score:
+                delta_score = beta_score
+                delta_pos = beta_pos
+                beta_pos = wolf.copy()
+                beta_score = fitness
+            elif fitness < delta_score:
+                delta_pos = wolf.copy()
+                delta_score = fitness
         
-        fitness_history.append(best_fitness) #for the plot of fitness evolution 
-        weight_updates.append(np.mean(iteration_updates) if iteration_updates else 0) # if wolfs are updates we get the mean for the plot to see if they are converging or not 
+        fitness_history.append(alpha_score)  # for the plot of fitness evolution 
+        weight_updates.append(np.mean(iteration_updates) if iteration_updates else 0)  # if wolves are updated we get the mean for the plot to see if they are converging or not 
         
-        print(f"Iteration {iteration + 1}/{max_iter} - Fitness: {best_fitness:.6f} - Update: {weight_updates[-1]:.6f}")
+        print(f"Iteration {iteration + 1}/{max_iter} - Fitness: {alpha_score:.6f} - Update: {weight_updates[-1]:.6f}")
     
     if visualize:
         plot_results(fitness_history, weight_updates)
     
-    return alpha, fitness_history
+    return alpha_pos, fitness_history
 
 
 def plot_results(fitness_history, weight_updates):
@@ -171,3 +180,35 @@ def plot_results(fitness_history, weight_updates):
     plt.tight_layout()
     plt.savefig('gwo_results.png', dpi=300, bbox_inches='tight')
     print("\nPlots saved to: gwo_results.png")
+
+
+if __name__ == '__main__':
+    from NN import get_predictions, X_train, X_val, X_test, Y_train, Y_val, Y_test
+    from utils import fitness_function
+
+    print("Iniciando GWO para treinamento da Rede Neural...")
+
+    def nn_fitness_wrapper(pesos):
+        # Gera as previsoes usando a rede neural com os pesos do lobo
+        previsoes = get_predictions(pesos, X_train, Y_train, X_val, Y_val)
+        # Calcula a fitness (erro)
+        try: #isto só tem haver com se é array ou dataframe
+            valores_reais = Y_val.values
+        except AttributeError:
+            valores_reais = Y_val
+        return fitness_function(previsoes, valores_reais)
+
+    n_weights = 2200
+    num_wolves = 30
+
+    print("Inicializando população...")
+    population, _, _ = initialize_population(num_wolves, n_weights, method='random')
+
+    print("Otimizando pesos com GWO...")
+    best_pos, hist = grey_wolf_optimizer(
+        population, num_wolves, n_weights,
+        max_iter=20, fitness_func=nn_fitness_wrapper, visualize=True
+    )
+
+    print("\nOtimização concluída!")
+    print(f"Melhor erro (fitness): {hist[-1]:.8f}")
