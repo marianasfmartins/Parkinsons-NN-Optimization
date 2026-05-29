@@ -152,12 +152,12 @@ def grey_wolf_optimizer(population, num_wolves, n_weights, max_iter=50, fitness_
         print(f"Iteration {iteration + 1}/{max_iter} - Fitness: {alpha_score:.6f} - Update: {weight_updates[-1]:.6f}")
     
     if visualize:
-        plot_results(fitness_history, weight_updates)
+        plot_history(fitness_history, weight_updates)
     
     return alpha_pos, fitness_history
 
-
-def plot_results(fitness_history, weight_updates):
+#PLOT HISTORY FUNCTION
+def plot_history(fitness_history, weight_updates):
     """Plot optimization results"""
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
@@ -182,13 +182,14 @@ def plot_results(fitness_history, weight_updates):
     print("\nPlots saved to: gwo_results.png")
 
 
+
 if __name__ == '__main__':
     from NN import get_predictions, get_n_weights, X_train, X_val, X_test, Y_train, Y_val, Y_test
     from utils import fitness_function
 
     print("Iniciando GWO para treinamento da Rede Neural...")
 
-    def nn_fitness_wrapper(pesos):
+    '''def nn_fitness_wrapper(pesos):
         # Gera as previsoes usando a rede neural com os pesos do lobo
         previsoes = get_predictions(pesos, X_train, Y_train, X_val, Y_val)
         # Calcula a fitness (erro)
@@ -212,4 +213,4 @@ if __name__ == '__main__':
     )
 
     print("\nOtimização concluída!")
-    print(f"Melhor erro (fitness): {hist[-1]:.8f}")
+    print(f"Melhor erro (fitness): {hist[-1]:.8f}")'''

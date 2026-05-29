@@ -19,6 +19,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import importlib
+import random
 
 # Adiciona a raiz do projeto ao path para os imports funcionarem
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -41,7 +42,7 @@ tournament_selection = cm.tournament_selection  # Seleção (usada nas duas comb
 
 # ── FITNESS WRAPPER ───────────────────────────────────────────────────────────
 
-def nn_fitness_wrapper(pesos):
+'''def nn_fitness_wrapper(pesos):
     """
     Função que avalia a qualidade de um vetor de pesos (um indivíduo do GA).
 
@@ -64,11 +65,11 @@ def nn_fitness_wrapper(pesos):
 
     # Calcular o erro total entre previsões e valores reais
     return fitness_function(previsoes, valores_reais)
-
+'''
 
 # ── ALGORITMO GENÉTICO ────────────────────────────────────────────────────────
 
-def genetic_algorithm(population, crossover_func, mutation_func,
+'''def genetic_algorithm(population, crossover_func, mutation_func,
                       max_iter=50, mutation_rate=0.1, mutation_strength=0.05,
                       pool_size=3, label="GA", visualize=True):
     """
@@ -156,8 +157,86 @@ def genetic_algorithm(population, crossover_func, mutation_func,
     if visualize:
         plot_results(fitness_history, label)
 
-    return best_individual, fitness_history
+    return best_individual, fitness_history'''
 
+
+
+
+
+
+#GA LOOP ADAPTADO ÀS AULAS
+
+def genetic_algorithm(population,
+                      fit_func,
+                      selector,
+                      mutator,
+                      xover_operator,
+                      p_mut,
+                      p_xover,
+                      n_gens,
+                      pool_size=3,
+                      mutation_strength=0.05):
+    """
+    Algoritmo Genético Clássico da Aula - Adaptado para Minimização de Pesos de NN.
+    """
+    pop_size = len(population)
+    
+    # GERAÇÃO 0: Avaliar a população inicial (Passada de fora para consistência com o GWO)
+    pop_fits = [fit_func(ind) for ind in population]
+
+    # Como o problema é de MINIMIZAÇÃO (Erro MAE), o melhor é o menor valor
+    best_fitness = min(pop_fits)
+    best_individual = population[np.argmin(pop_fits)].copy()
+    
+    # TASK: Criar o histórico para o plot_results
+    fitness_history = [best_fitness]
+
+    print(f"[GA] Geração 0/{n_gens} — Fitness Inicial (Menor Erro): {best_fitness:.6f}")
+
+    # Executar a evolução por N gerações
+    for generation in range(n_gens):
+        offspring = []
+
+        # Preencher a população de descendentes (offspring)
+        while len(offspring) < pop_size:
+
+            # Seleção por torneio de 2 pais (Garante consistência teórica)
+            # Passamos o pool_size e forçamos a lógica de minimização dentro do seletor
+            parent1 = selector(population=population, fitnesses=pop_fits, pool_size=pool_size)
+            parent2 = selector(population=population, fitnesses=pop_fits, pool_size=pool_size)
+
+            # Decisão probabilística: Reprodução ou Crossover (Como na Aula!)
+            if random.random() <= p_xover:
+                child1, child2 = xover_operator(parent1, parent2)
+            else:
+                child1 = parent1.copy()
+                child2 = parent2.copy()
+
+            # Mutação obrigatória com os hiperparâmetros passados
+            child1 = mutator(child1, p_mut=p_mut, mutation_strength=mutation_strength)
+            child2 = mutator(child2, p_mut=p_mut, mutation_strength=mutation_strength)
+
+            # Adicionar à população de descendentes garantindo que não ultrapassa o pop_size
+            offspring.append(child1)
+            if len(offspring) < pop_size:
+                offspring.append(child2)
+
+        # Substituição geracional completa
+        population = [child for child in offspring]
+        pop_fits = [fit_func(ind) for ind in population]
+
+        # Atualizar o melhor global do algoritmo (Minimização)
+        gen_best_fitness = min(pop_fits)
+        if gen_best_fitness < best_fitness:
+            best_fitness = gen_best_fitness
+            best_individual = population[np.argmin(pop_fits)].copy()
+
+        # Guardar no histórico da TASK
+        fitness_history.append(best_fitness)
+        print(f"[GA] Geração {generation + 1}/{n_gens} — Melhor Fitness: {best_fitness:.6f}")
+
+    # Retorna o melhor indivíduo (pesos ótimos) e o histórico para o gráfico comparativo
+    return best_individual, fitness_history
 
 # ── PLOT ──────────────────────────────────────────────────────────────────────
 
@@ -177,11 +256,38 @@ def plot_results(fitness_history, label="GA"):
     print(f"  Plot guardado: {filename}")
     plt.close()
 
+#BAYESIAN OPTIMIZATION SEARCH
+def objective(trial):
+    # 1. Sugerir o método de inicialização
+    init_method = trial.suggest_categorical('init_method', ['random', 'he_normal', 'he_uniform', 'xavier_normal'])
+    
+    # 2. Sugerir os operadores do GA
+    xover_op = trial.suggest_categorical('xover', [arithmetic_crossover, blend_crossover])
+    mut_op = trial.suggest_categorical('mutation', [gaussian_mutation, polynomial_mutation])
+    
+    # 3. Gerar a população usando o método sugerido pelo trial
+    # (Nota: n_weights para o teu MLP com hidden_layer_sizes=(100,) e 21 features de entrada seria 100*21 + 100 + 100*2 + 2 = 2402 se considerarmos pesos e biases!)
+    population = initialize_population(pop_size=30, n_weights=2402, method=init_method, n_in=21, n_out=2)
+    fitness_func = lambda ind: fitness_function(ind, X_train, Y_train, X_val, Y_val)
+    
+    # 4. Executar o GA
+    best_weights, ga_hist = genetic_algorithm(
+        population=population,
+        fit_func=fitness_func,
+        selector=tournament_selection,
+        mutator=mut_op,
+        xover_operator=xover_op,
+        p_mut=trial.suggest_float('p_mut', 0.01, 0.2),
+        p_xover=trial.suggest_float('p_xover', 0.6, 0.9),
+        n_gens=30
+    )
+    return min(ga_hist)
+
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    print("\n" + "=" * 55)
+    '''print("\n" + "=" * 55)
     print("  GA — GENETIC ALGORITHM (duas combinações)")
     print("=" * 55)
 
@@ -265,3 +371,4 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.savefig('ga_comparison.png', dpi=300, bbox_inches='tight')
     print("\n  Plot de comparação guardado: ga_comparison.png")
+'''
