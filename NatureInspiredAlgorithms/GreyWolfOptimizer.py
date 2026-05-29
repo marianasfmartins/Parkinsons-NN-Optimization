@@ -183,7 +183,7 @@ def plot_results(fitness_history, weight_updates):
 
 
 if __name__ == '__main__':
-    from NN import get_predictions, X_train, X_val, X_test, Y_train, Y_val, Y_test
+    from NN import get_predictions, get_n_weights, X_train, X_val, X_test, Y_train, Y_val, Y_test
     from utils import fitness_function
 
     print("Iniciando GWO para treinamento da Rede Neural...")
@@ -198,7 +198,8 @@ if __name__ == '__main__':
             valores_reais = Y_val
         return fitness_function(previsoes, valores_reais)
 
-    n_weights = 2200
+    n_weights = get_n_weights(X_train, Y_train)  # calcula automaticamente (coefs + biases)
+    print(f"Total de pesos a otimizar: {n_weights}")
     num_wolves = 30
 
     print("Inicializando população...")
