@@ -11,7 +11,8 @@ import random
 
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import generate_random_solution, fitness_function
+from utils import fitness_function
+from GA_operators.population import generate_random_solution
 
 
 def initialize_population(num_wolves=30, n_weights=10, method='random'): # we generate 30 possible vectors

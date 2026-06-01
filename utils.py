@@ -2,12 +2,6 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from NN import *
-
-
-def generate_random_solution(n_weights):  #generating our random solution as a start point for algorithms
-    return[random.uniform(-0.05,0.05) for _ in range(n_weights)]
-
-
 def fitness_function(solution, X_train, Y_train, X_val, Y_val): # minimization: makes sense to minimize prediction error
     # Adicionado: Gera as previsões usando a estrutura da NN e os pesos do lobo atual
     prediction = get_predictions(solution, X_train, Y_train, X_val, Y_val)
@@ -30,3 +24,19 @@ def fitness_misclassification(solution, X_train, Y_train, X_val, Y_val):
     wrong_predictions = np.sum(Y_val != Y_pred)
     
     return wrong_predictions
+
+def run_multiple_times(algorithm_fn, params, n_runs=30):
+    all_histories = []
+    for _ in range(n_runs):
+        _, history = algorithm_fn(**params)
+        all_histories.append(history)
+
+    n_iter = len(all_histories[0])
+    avg_history = []
+    for i in range(n_iter):
+        total = 0
+        for run in range(n_runs):
+            total += all_histories[run][i]
+        avg_history.append(total / n_runs)
+
+    return avg_history

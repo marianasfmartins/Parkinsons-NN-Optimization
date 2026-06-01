@@ -1,28 +1,17 @@
-from sklearn.model_selection import train_test_split
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
+
 from sklearn.neural_network import MLPClassifier
-from project_data import data
 import numpy as np
-
-
-#data partition
-def data_partition(data,target_name):
-    X=data.drop(columns=target_name)
-    Y=data[target_name]
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42, stratify=Y)
-    X_train, X_val, Y_train, Y_val = train_test_split(X_train,
-                                                      Y_train,
-                                                      test_size=0.25, random_state=15, shuffle=True, stratify=Y_train
-                                                      )
-
-    return X_train, X_val, X_test, Y_train, Y_val, Y_test
-#Data Partitioning
-X_train, X_val, X_test, Y_train, Y_val, Y_test=data_partition(data,'status')
+from project_data import X_train, Y_train, X_val, Y_val
 
 #training the data and getting the predictions
 def get_predictions(solution, X_train, Y_train, X_val, Y_val):
-    # Passo 1: Inicializar a rede e treinar 1 iteração para criar a estrutura interna
+    
     NN = MLPClassifier(hidden_layer_sizes=(100,), activation='relu', solver='adam',
                        alpha=0.0001, learning_rate='constant', max_iter=1)
+    #training our NN
     NN.fit(X_train, Y_train)
 
     # Passo 2: Partir o vetor linear do lobo nas matrizes de pesos (coefs_)
