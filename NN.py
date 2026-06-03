@@ -38,13 +38,4 @@ def get_predictions(solution, X_train, Y_train, X_val, Y_val):
     return Y_pred
 
 
-def get_n_weights(X_train, Y_train=None):
-    """Calcula o número total de pesos usando a fórmula definida pelo grupo:
-    (d × 100) + 100 + (100 × 2) + 2  =  100d + 302
-    Onde d = número de features de entrada, 100 = neurónios ocultos, 2 = classes de saída.
-    """
-    d = X_train.shape[1]  # número de features de entrada
-    return (d * 100) + 100 + (100 * 2) + 2
-
-
 

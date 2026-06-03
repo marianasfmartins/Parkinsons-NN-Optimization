@@ -75,7 +75,7 @@ def he_uniform_ind(n_weights, n_in=21):
     return np.random.uniform(low=-limit, high=limit, size=n_weights)
 
 
-def xavier_normal_ind(n_weights, n_in=21, n_out=1):
+def xavier_normal_ind(n_weights, n_in=21, n_out=2):
     """
     Inicialização Xavier Normal (Glorot Normal).
 
@@ -89,7 +89,7 @@ def xavier_normal_ind(n_weights, n_in=21, n_out=1):
     Args:
         n_weights (int): Número total de pesos a inicializar.
         n_in  (int): Fan-in  — número de entradas do neurónio. Default = 21.
-        n_out (int): Fan-out — número de saídas do neurónio.  Default = 1.
+        n_out (int): Fan-out — número de saídas do neurónio.  Default = 2.
 
     Returns:
         numpy array de forma (n_weights,) com os pesos inicializados.

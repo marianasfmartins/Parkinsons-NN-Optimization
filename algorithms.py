@@ -1,15 +1,7 @@
-import sys
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import importlib
 import random
-from utils import fitness_misclassification
-from NatureInspiredAlgorithms.GreyWolfOptimizer import plot_history
+import numpy as np
 from GA_operators.population import initialize_population
-
-import random
-import numpy as np
+from utils import fitness_misclassification, plot_history
 
 def genetic_algorithm(population,
                       init_method,
@@ -129,7 +121,7 @@ def genetic_algorithm(population,
     return best_individual, fitness_history
 
 
-def grey_wolf_optimizer(population, num_wolves, n_weights, max_iter=50, fitness_func=fitness_misclassification, visualize=True):
+def grey_wolf_optimizer(population, init_method, n_in, n_out, num_wolves, n_weights, max_iter=50, fitness_func=fitness_misclassification, visualize=True):
     """
     Grey Wolf Optimizer Algorithm
     
@@ -145,6 +137,8 @@ def grey_wolf_optimizer(population, num_wolves, n_weights, max_iter=50, fitness_
         best_wolf, fitness_history
     """
     
+    population = population(num_wolves, n_weights, init_method, n_in, n_out)
+
     # Initialize leaders and their scores
     alpha_pos = None
     alpha_score = float('inf')
