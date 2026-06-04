@@ -18,6 +18,6 @@ def data_partition(data,target_name):
 
 X_train, X_val, X_test, Y_train, Y_val, Y_test=data_partition(data,'status')
 
-#print(X_train.shape,Y_train.shape, X_val.shape, Y_val.shape, X_test.shape,Y_test.shape)
+print(X_train.shape,Y_train.shape, X_val.shape, Y_val.shape, X_test.shape,Y_test.shape)
 
 
