@@ -285,11 +285,4 @@ This project is part of an academic study on optimization algorithms. Please ref
 
 This project builds upon the work in the parent repository: [Optimization_Algorithms](https://github.com/Maiara-Almada/Optimization_Algorithms)
 
-## Contact & Support
 
-For questions or issues regarding this project, please open an issue in the repository or refer to the detailed documentation in `Project_OA.pdf`.
-
----
-
-**Last Updated**: June 2024  
-**Repository Status**: Active
